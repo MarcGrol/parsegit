@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -23,20 +24,30 @@ type fileSummary struct {
 }
 
 func main() {
+	// read config
 	filename, analyzeCommiters, analyzeFiles, dumpAsJson := parseArgs()
 
+	// parse and post-process git2json file
+	commits := Commits{}
+	parse(filename, func(commit Commit) {
+		commits = append(commits, commit)
+	})
+	sort.Sort(ByTimestamp{commits})
+
 	if dumpAsJson {
-		parse(filename, func(commit Commit) {
-			logCommit(commit)
-		})
+		// dump to debug
+		for _, c := range commits {
+			logCommit(c)
+		}
 	}
 
 	if analyzeCommiters {
+		// analyze work done by commiter
 		fmt.Fprintf(os.Stdout, "committer-name; #commits; #additions; #removals; #files\n")
 		committers := map[string]committerSummary{}
-		parse(filename, func(commit Commit) {
-			commiterInfo(committers, commit)
-		})
+		for _, c := range commits {
+			commiterInfo(committers, c)
+		}
 		for name, summ := range committers {
 			fmt.Fprintf(os.Stdout, "%s; %d; %d; %d; %d\n",
 				name, summ.NumCommits, summ.LinesAdded, summ.LinesRemoved, summ.FilesChanged)
@@ -44,11 +55,12 @@ func main() {
 	}
 
 	if analyzeFiles {
+		// analyze work done on files
 		fmt.Fprintf(os.Stdout, "filename; #commits; #additions; #removals; #commiters\n")
 		files := map[string]fileSummary{}
-		parse(filename, func(commit Commit) {
-			fileInfo(files, commit)
-		})
+		for _, c := range commits {
+			fileInfo(files, c)
+		}
 		// print as csv
 		for fn, summ := range files {
 			fmt.Fprintf(os.Stdout, "%s;%d;%d;%d;%d\n",

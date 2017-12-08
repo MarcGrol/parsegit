@@ -12,7 +12,11 @@ Use git2json tool (see https://github.com/tarmstrong/git2json)
 
 ## Process the history
 
-    $ parsegit -filename=git_history.json -analyze-committers=true > committers.csv
+*Analyse committers*
+
+    $ parsegit -filename=git_history.json -analyze-committers | sort -n -t';' -r -k2
+
+    $ parsegit -filename=git_history.json -analyze-files | sort -n -t';' -r -k2
      
      
 

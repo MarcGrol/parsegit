@@ -49,6 +49,19 @@ type Commit struct {
 	Tree      string          `json:"tree"`
 }
 
+type Commits []Commit
+
+func (c Commits) Len() int      { return len(c) }
+func (c Commits) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
+
+// ByName implements sort.Interface by providing Less and using the Len and
+// Swap methods of the embedded Organs value.
+type ByTimestamp struct{ Commits }
+
+func (c ByTimestamp) Less(i, j int) bool {
+	return c.Commits[i].Author.Timestamp.Before(c.Commits[j].Author.Timestamp)
+}
+
 func parse(filename string, callback func(c Commit)) error {
 	// parse file
 	jsonBlob, err := ioutil.ReadFile(filename)
