@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -11,7 +12,7 @@ import (
 
 func main() {
 	// read config
-	filename, logTemplate, needToAnalyzeCommiters, needToAnalyzeFiles, debug := parseArgs()
+	filename, logTemplate, needToAnalyzeCommiters, needToAnalyzeFiles, analyzeFilesOverTime, debug := parseArgs()
 
 	// parse and post-process git2json file
 	commits := Commits{}
@@ -36,7 +37,14 @@ func main() {
 	}
 
 	if needToAnalyzeFiles {
-		analyseFiles(commits)
+		analyseFilesAsCsv(commits)
+	}
+
+	if analyzeFilesOverTime {
+		result := analyseFilesOverTime(commits, 20)
+		blob, _ := json.MarshalIndent(result, "", "\t")
+
+		fmt.Fprintf(os.Stdout, "%s", string(blob))
 	}
 }
 
@@ -47,13 +55,14 @@ func applyTemplate(commit Commit, template *template.Template) {
 	}
 }
 
-func parseArgs() (string, string, bool, bool, bool) {
+func parseArgs() (string, string, bool, bool, bool, bool) {
 
 	help := flag.Bool("help", false, "This help text")
 	filename := flag.String("filename", "git_history.json", "Json file with git history as created by git2json")
 	logTemplate := flag.String("template", "{{.Author.Timestamp}},{{.Author.Name}},{{.ChangeSet.NumFilesChanged}},{{.ChangeSet.LinesAdded}},{{.ChangeSet.LinesRemoved}}\n", "Logging template")
 	analyzeCommitters := flag.Bool("analyze-committers", false, "Analyse commiters of project")
 	analyzeFiles := flag.Bool("analyze-files", false, "Analyse files of project")
+	analyzeFilesOverTime := flag.Bool("analyze-files-over-time", false, "Analyse files of project over time")
 	dumpAsJson := flag.Bool("debug", false, "Dump details of all commits of project")
 
 	flag.Parse()
@@ -62,11 +71,11 @@ func parseArgs() (string, string, bool, bool, bool) {
 		printHelp()
 	}
 
-	if *analyzeCommitters == false && *analyzeFiles == false && *dumpAsJson == false {
+	if *analyzeCommitters == false && *analyzeFiles == false && *dumpAsJson == false && *analyzeFilesOverTime == false {
 		printHelp()
 	}
 
-	return *filename, *logTemplate, *analyzeCommitters, *analyzeFiles, *dumpAsJson
+	return *filename, *logTemplate, *analyzeCommitters, *analyzeFiles, *analyzeFilesOverTime, *dumpAsJson
 }
 
 func printHelp() {
