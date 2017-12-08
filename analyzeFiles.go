@@ -103,7 +103,7 @@ func analyseFilesAsCsv(commits Commits) map[string]fileSummary {
 		fileInfo(files, c)
 	}
 	// print as csv
-	fmt.Fprintf(os.Stdout, "filename; #commits; #additions; #removals; #commiters\n")
+	fmt.Fprintf(os.Stdout, "filename; #extension, #commits; #additions; #removals; #commiters\n")
 	for fn, summ := range files {
 		extention := ""
 		parts := strings.Split(fn, ".")
