@@ -83,7 +83,7 @@ func parse(filename string, callback func(c Commit)) error {
 		c.Author.Timestamp = time.Unix(c.Author.Date, 0)
 		c.Author.Date = 0 // remove old raw value
 
-		// parse array of heterogenous array into something meaningfull
+		// parse array of array with heterogenous elements into something typestrong
 		changes := []Change{}
 		numAdds := 0
 		numDels := 0
@@ -119,7 +119,7 @@ func parse(filename string, callback func(c Commit)) error {
 		c.Changes = [][]interface{}{} // remove old raw value
 
 		// mark as merge
-		if strings.HasPrefix(c.Message, "Merge branch") {
+		if strings.HasPrefix(c.Message, "Merge") {
 			c.ChangeSet.IsMerge = true
 		}
 
