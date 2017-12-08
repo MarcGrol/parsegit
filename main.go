@@ -1,16 +1,17 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"sort"
+	"text/template"
 )
 
 func main() {
 	// read config
-	filename, needToAnalyzeCommiters, needToAnalyzeFiles, debug := parseArgs()
+	filename, logTemplate, needToAnalyzeCommiters, needToAnalyzeFiles, debug := parseArgs()
 
 	// parse and post-process git2json file
 	commits := Commits{}
@@ -21,8 +22,12 @@ func main() {
 
 	// dump to debug
 	if debug {
+		t, err := template.New("log-template").Parse(logTemplate)
+		if err != nil {
+			log.Fatalf("Error parsing template: %s", err)
+		}
 		for _, c := range commits {
-			logCommit(c)
+			applyTemplate(c, t)
 		}
 	}
 
@@ -35,19 +40,18 @@ func main() {
 	}
 }
 
-func logCommit(commit Commit) {
-	//fmt.Fprintf(os.Stdout, "%s - %s - #files: %d, #added: %d, #removed: %d\n",
-	//	commit.Author.Timestamp, commit.Author.Name,
-	//	commit.ChangeSet.NumFilesChanged, commit.ChangeSet.LinesAdded, commit.ChangeSet.LinesRemoved)
-
-	jsonBlob, _ := json.MarshalIndent(commit, "", "\t")
-	fmt.Fprintf(os.Stdout, "[\n%s,\n]\n", jsonBlob)
+func applyTemplate(commit Commit, template *template.Template) {
+	err := template.Execute(os.Stdout, commit)
+	if err != nil {
+		log.Fatalf("Error applying template: %s", err)
+	}
 }
 
-func parseArgs() (string, bool, bool, bool) {
+func parseArgs() (string, string, bool, bool, bool) {
 
 	help := flag.Bool("help", false, "This help text")
 	filename := flag.String("filename", "git_history.json", "Json file with git history as created by git2json")
+	logTemplate := flag.String("template", "{{.Author.Timestamp}},{{.Author.Name}},{{.ChangeSet.NumFilesChanged}},{{.ChangeSet.LinesAdded}},{{.ChangeSet.LinesRemoved}}\n", "Logging template")
 	analyzeCommitters := flag.Bool("analyze-committers", false, "Analyse commiters of project")
 	analyzeFiles := flag.Bool("analyze-files", false, "Analyse files of project")
 	dumpAsJson := flag.Bool("debug", false, "Dump details of all commits of project")
@@ -62,7 +66,7 @@ func parseArgs() (string, bool, bool, bool) {
 		printHelp()
 	}
 
-	return *filename, *analyzeCommitters, *analyzeFiles, *dumpAsJson
+	return *filename, *logTemplate, *analyzeCommitters, *analyzeFiles, *dumpAsJson
 }
 
 func printHelp() {
