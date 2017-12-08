@@ -54,8 +54,6 @@ type Commits []Commit
 func (c Commits) Len() int      { return len(c) }
 func (c Commits) Swap(i, j int) { c[i], c[j] = c[j], c[i] }
 
-// ByName implements sort.Interface by providing Less and using the Len and
-// Swap methods of the embedded Organs value.
 type ByTimestamp struct{ Commits }
 
 func (c ByTimestamp) Less(i, j int) bool {
