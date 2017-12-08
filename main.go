@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -9,7 +10,7 @@ import (
 
 func main() {
 	// read config
-	filename, analyzeCommiters, analyzeFiles, dumpAsJson := parseArgs()
+	filename, needToAnalyzeCommiters, needToAnalyzeFiles, debug := parseArgs()
 
 	// parse and post-process git2json file
 	commits := Commits{}
@@ -18,29 +19,29 @@ func main() {
 	})
 	sort.Sort(ByTimestamp{commits})
 
-	if dumpAsJson {
-		// dump to debug
+	// dump to debug
+	if debug {
 		for _, c := range commits {
 			logCommit(c)
 		}
 	}
 
-	if analyzeCommiters {
-		doAnalyseCommitters(commits)
+	if needToAnalyzeCommiters {
+		analyseCommitters(commits)
 	}
 
-	if analyzeFiles {
-		doAnalyseFiles(commits)
+	if needToAnalyzeFiles {
+		analyseFiles(commits)
 	}
 }
 
 func logCommit(commit Commit) {
-	fmt.Fprintf(os.Stdout, "%s - %s - #files: %d, #added: %d, #removed: %d\n",
-		commit.Author.Timestamp, commit.Author.Name,
-		commit.ChangeSet.NumFilesChanged, commit.ChangeSet.LinesAdded, commit.ChangeSet.LinesRemoved)
+	//fmt.Fprintf(os.Stdout, "%s - %s - #files: %d, #added: %d, #removed: %d\n",
+	//	commit.Author.Timestamp, commit.Author.Name,
+	//	commit.ChangeSet.NumFilesChanged, commit.ChangeSet.LinesAdded, commit.ChangeSet.LinesRemoved)
 
-	//jsonBlob, _ := json.MarshalIndent(commit, "", "\t")
-	//fmt.Fprintf(os.Stdout, "[\n%s,\n]\n", jsonBlob)
+	jsonBlob, _ := json.MarshalIndent(commit, "", "\t")
+	fmt.Fprintf(os.Stdout, "[\n%s,\n]\n", jsonBlob)
 }
 
 func parseArgs() (string, bool, bool, bool) {
@@ -49,7 +50,7 @@ func parseArgs() (string, bool, bool, bool) {
 	filename := flag.String("filename", "git_history.json", "Json file with git history as created by git2json")
 	analyzeCommitters := flag.Bool("analyze-committers", false, "Analyse commiters of project")
 	analyzeFiles := flag.Bool("analyze-files", false, "Analyse files of project")
-	dumpAsJson := flag.Bool("dump", false, "Dump commits of project as json")
+	dumpAsJson := flag.Bool("debug", false, "Dump details of all commits of project")
 
 	flag.Parse()
 
